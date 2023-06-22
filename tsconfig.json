@@ -4,7 +4,7 @@
     "target": "ES2022",
     "module": "commonjs",
     "strict": true,
-    "rootDir": "./lib",
+    "rootDirs": ["./lib", "./test"],
     "outDir": "./build/",
     "skipLibCheck": true,
     "experimentalDecorators": true,

@@ -11,7 +11,7 @@ export {Request, Response, RouteHandler};
 
 export class MuzuServer {
   private readonly routes: Route[];
-  private server: Server;
+  public readonly server: Server;
 
   constructor() {
     this.routes = [];
@@ -29,6 +29,10 @@ export class MuzuServer {
     console.log('🚀 Server is listening on port', port);
     console.log('📡 Routes', this.routes);
     this.server.listen(port, callback);
+  }
+
+  public stop(callback?: () => void): void {
+    this.server.close(callback);
   }
 
   private sendResponse(res: Response, statusCode: number, body: Object): void {

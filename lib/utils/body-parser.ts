@@ -16,7 +16,7 @@ export async function getRequestBody(
         reject(e);
       }
     });
-    req.on('error', (err: any) => {
+    req.on('error', err => {
       reject(err);
     });
   });
