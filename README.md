@@ -18,13 +18,15 @@ Here's an example usage:
 import { MuzuServer, Request, Response } from 'muzu';
 
 const app = new MuzuServer();
-const { Get, Controller } = app;
+const { Post, Controller } = app;
 
 @Controller('auth')
 class TestController {
 
-  @Get('login')
+  @Post('login')
   login(req: Request, res: Response) {
+    const { username, password } = req.body;
+    
     // Do something here
 
     return {
@@ -37,7 +39,14 @@ class TestController {
 app.listen(8080);
 ```
 
-In the above example, an instance of the `MuzuServer` class is created and a route is defined using the `@Get` and `@Controller` decorators. The `TestController` class is annotated with the `@Controller('auth')` decorator to specify the base route path. The `login` method within the `TestController` class is annotated with the `@Get('login')` decorator to define the route for handling GET requests to the '/login' endpoint. (http://localhost:8080/auth/login)
+In the above example, an instance of the `MuzuServer` class is created and a route is defined using the `@Post` and `@Controller` decorators. 
+
+The `TestController` class is annotated with the `@Controller('auth')` decorator to specify the base route path. The `login` method within the `TestController` class is annotated with the `@Get('login')` decorator to define the route for handling GET requests to the '/login' endpoint. (http://localhost:8080/auth/login)
+
+
+(if you want to handle other methods, you can use the `@Get`, `@Post`, `@Put`, `@Delete`, `@Patch` decorators)
+
+
 
 Inside the `login` method, you can add your desired logic to handle the request. In this example, a simple object `{ status: true }` is returned as the response.
 

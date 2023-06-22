@@ -15,6 +15,7 @@
     "compile": "tsc",
     "fix": "gts fix",
     "commit": "cz",
+    "ac": "git add . && cz",
     "prepare": "npm run compile",
     "pretest": "npm run compile",
     "posttest": "npm run lint"
