@@ -5,7 +5,7 @@ import {createServer, Server} from 'http';
 
 import {Request, Route} from './interfaces';
 import {RouteHandler, Response} from './types';
-import {parseQueryParams, removeSlash} from './utils';
+import {getRequestBody, parseQueryParams, removeSlash} from './utils';
 
 export {Request, Response, RouteHandler};
 
@@ -37,18 +37,26 @@ export class MuzuServer {
     console.log('📤 Response', {statusCode, body});
   }
 
-  private handleRequest(req: Request, res: Response): void {
+  private async handleRequest(req: Request, res: Response): Promise<void> {
     const {url, method} = req;
     const path = url!.split('?')[0];
 
     req.params = parseQueryParams(url!);
 
     const route = this.routes.find(
-      req => req.url === removeSlash(path) && req.method === method
+      req => removeSlash(req.url) === removeSlash(path) && req.method === method
     );
 
     if (!route) {
       return this.sendResponse(res, 404, {message: '404 Not Found'});
+    }
+
+    try {
+      const body = await getRequestBody(req);
+      req.body = body;
+    } catch (error) {
+      console.log('🚨 Error parsing body', error);
+      return this.sendResponse(res, 400, {message: '400 Bad Request'});
     }
 
     const result = route.handler(req, res);
@@ -96,6 +104,70 @@ export class MuzuServer {
         target[propertyKey]
       );
       Reflect.defineMetadata('method', 'GET', target[propertyKey]);
+      return descriptor;
+    };
+  };
+
+  Post = (url: string) => {
+    return (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) => {
+      Reflect.defineMetadata(
+        'url',
+        `${url}`.toLowerCase(),
+        target[propertyKey]
+      );
+      Reflect.defineMetadata('method', 'POST', target[propertyKey]);
+      return descriptor;
+    };
+  };
+
+  Delete = (url: string) => {
+    return (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) => {
+      Reflect.defineMetadata(
+        'url',
+        `${url}`.toLowerCase(),
+        target[propertyKey]
+      );
+      Reflect.defineMetadata('method', 'DELETE', target[propertyKey]);
+      return descriptor;
+    };
+  };
+
+  Put = (url: string) => {
+    return (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) => {
+      Reflect.defineMetadata(
+        'url',
+        `${url}`.toLowerCase(),
+        target[propertyKey]
+      );
+      Reflect.defineMetadata('method', 'PUT', target[propertyKey]);
+      return descriptor;
+    };
+  };
+
+  Patch = (url: string) => {
+    return (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) => {
+      Reflect.defineMetadata(
+        'url',
+        `${url}`.toLowerCase(),
+        target[propertyKey]
+      );
+      Reflect.defineMetadata('method', 'PATCH', target[propertyKey]);
       return descriptor;
     };
   };
