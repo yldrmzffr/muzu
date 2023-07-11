@@ -1,9 +1,9 @@
 {
   "name": "muzu",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "",
-  "main": "build/index.js",
-  "types": "build/index.d.ts",
+  "main": "build/lib/index.js",
+  "types": "build/lib/index.d.ts",
   "files": [
     "build/*"
   ],
