@@ -4,7 +4,7 @@ import * as pathLib from 'path';
 import {createServer, Server} from 'http';
 
 import {Request, Route} from './interfaces';
-import {RouteHandler, Response} from './types';
+import {RequestMethod, Response, RouteHandler} from './types';
 import {getRequestBody, parseQueryParams, removeSlash} from './utils';
 
 export {Request, Response, RouteHandler};
@@ -68,6 +68,22 @@ export class MuzuServer {
     return this.sendResponse(res, statusCode, result);
   }
 
+  public HttpMethod(method: RequestMethod, url: string) {
+    return (
+      target: any,
+      propertyKey: string,
+      descriptor: PropertyDescriptor
+    ) => {
+      Reflect.defineMetadata(
+        'url',
+        `${url}`.toLowerCase(),
+        target[propertyKey]
+      );
+      Reflect.defineMetadata('method', method, target[propertyKey]);
+      return descriptor;
+    };
+  }
+
   Controller = (path = '') => {
     return (target: any) => {
       Reflect.defineMetadata('path', path, target);
@@ -97,82 +113,22 @@ export class MuzuServer {
   };
 
   Get = (url: string) => {
-    return (
-      target: any,
-      propertyKey: string,
-      descriptor: PropertyDescriptor
-    ) => {
-      Reflect.defineMetadata(
-        'url',
-        `${url}`.toLowerCase(),
-        target[propertyKey]
-      );
-      Reflect.defineMetadata('method', 'GET', target[propertyKey]);
-      return descriptor;
-    };
+    return this.HttpMethod(RequestMethod.GET, url);
   };
 
   Post = (url: string) => {
-    return (
-      target: any,
-      propertyKey: string,
-      descriptor: PropertyDescriptor
-    ) => {
-      Reflect.defineMetadata(
-        'url',
-        `${url}`.toLowerCase(),
-        target[propertyKey]
-      );
-      Reflect.defineMetadata('method', 'POST', target[propertyKey]);
-      return descriptor;
-    };
+    return this.HttpMethod(RequestMethod.POST, url);
   };
 
   Delete = (url: string) => {
-    return (
-      target: any,
-      propertyKey: string,
-      descriptor: PropertyDescriptor
-    ) => {
-      Reflect.defineMetadata(
-        'url',
-        `${url}`.toLowerCase(),
-        target[propertyKey]
-      );
-      Reflect.defineMetadata('method', 'DELETE', target[propertyKey]);
-      return descriptor;
-    };
+    return this.HttpMethod(RequestMethod.DELETE, url);
   };
 
   Put = (url: string) => {
-    return (
-      target: any,
-      propertyKey: string,
-      descriptor: PropertyDescriptor
-    ) => {
-      Reflect.defineMetadata(
-        'url',
-        `${url}`.toLowerCase(),
-        target[propertyKey]
-      );
-      Reflect.defineMetadata('method', 'PUT', target[propertyKey]);
-      return descriptor;
-    };
+    return this.HttpMethod(RequestMethod.PUT, url);
   };
 
   Patch = (url: string) => {
-    return (
-      target: any,
-      propertyKey: string,
-      descriptor: PropertyDescriptor
-    ) => {
-      Reflect.defineMetadata(
-        'url',
-        `${url}`.toLowerCase(),
-        target[propertyKey]
-      );
-      Reflect.defineMetadata('method', 'PATCH', target[propertyKey]);
-      return descriptor;
-    };
+    return this.HttpMethod(RequestMethod.PATCH, url);
   };
 }
