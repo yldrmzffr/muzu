@@ -2,12 +2,16 @@ import 'reflect-metadata';
 import * as pathLib from 'path';
 
 import {createServer, Server} from 'http';
+import {HttpException} from './exceptions/http.exception';
 
 import {Request, Route} from './interfaces';
 import {RequestMethod, Response, RouteHandler} from './types';
 import {getRequestBody, parseQueryParams, removeSlash} from './utils';
+import {MuzuException} from './exceptions/muzu.exception';
+import {NotFoundException} from './exceptions/not-found.exception';
+import {BadRequestException} from './exceptions/bad-request.exception';
 
-export {Request, Response, RouteHandler};
+export {Request, Response, RouteHandler, HttpException};
 
 export class MuzuServer {
   private readonly routes: Route[];
@@ -42,30 +46,49 @@ export class MuzuServer {
   }
 
   private async handleRequest(req: Request, res: Response): Promise<void> {
-    const {url, method} = req;
-    const path = url!.split('?')[0];
-
-    req.params = parseQueryParams(url!);
-
-    const route = this.routes.find(
-      req => removeSlash(req.url) === removeSlash(path) && req.method === method
-    );
-
-    if (!route) {
-      return this.sendResponse(res, 404, {message: '404 Not Found'});
-    }
-
     try {
-      const body = await getRequestBody(req);
-      req.body = body;
-    } catch (error) {
-      console.log('🚨 Error parsing body', error);
-      return this.sendResponse(res, 400, {message: '400 Bad Request'});
-    }
+      const {url, method} = req;
+      const path = url!.split('?')[0];
 
-    const result = route.handler(req, res);
-    const statusCode = res.statusCode || 200;
-    return this.sendResponse(res, statusCode, result);
+      req.params = parseQueryParams(url!);
+
+      const route = this.routes.find(
+        req =>
+          removeSlash(req.url) === removeSlash(path) && req.method === method
+      );
+
+      if (!route) {
+        throw new NotFoundException(`Route ${method} ${path} not found`, {
+          method,
+          path,
+        });
+      }
+
+      try {
+        const body = await getRequestBody(req);
+        req.body = body;
+      } catch (error) {
+        console.log('🚨 Error parsing body', error);
+        const err = error as MuzuException;
+        throw new BadRequestException('Error parsing body', err.details);
+      }
+
+      const result = route.handler(req, res);
+      const statusCode = res.statusCode || 200;
+      return this.sendResponse(res, statusCode, result);
+    } catch (error) {
+      console.log('🚨 Error handling request', error);
+      const knownError = error as MuzuException;
+
+      if (knownError.kind === 'MuzuException') {
+        return this.sendResponse(res, knownError.status, knownError);
+      }
+
+      return this.sendResponse(res, 500, {
+        message: '500 Internal Server Error',
+        stack: knownError.stack,
+      });
+    }
   }
 
   public HttpMethod(method: RequestMethod, url: string) {
