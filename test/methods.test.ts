@@ -71,7 +71,15 @@ describe('MuzuServer', () => {
   it('should return 404 on GET /api/hello/world', async () => {
     const res = await request(muzuServer.server).get('/api/hello/world');
     expect(res.status).toEqual(404);
-    expect(res.body).toEqual({message: '404 Not Found'});
+    expect(res.body).toEqual({
+      kind: 'MuzuException',
+      message: 'Route GET /api/hello/world not found',
+      status: 404,
+      details: {
+        method: 'GET',
+        path: '/api/hello/world',
+      },
+    });
   });
 
   it('should return 400 on POST /api/hello', async () => {
@@ -79,7 +87,11 @@ describe('MuzuServer', () => {
       .post('/api/hello')
       .send('Not a JSON');
     expect(res.status).toEqual(400);
-    expect(res.body).toEqual({message: '400 Bad Request'});
+    expect(res.body).toEqual({
+      kind: 'MuzuException',
+      message: 'Error parsing body',
+      status: 400,
+    });
   });
 });
 
