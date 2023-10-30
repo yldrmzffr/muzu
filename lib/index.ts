@@ -6,32 +6,26 @@ import {HttpException} from './exceptions/http.exception';
 
 import {Request, Route} from './interfaces';
 import {RequestMethod, Response, RouteHandler} from './types';
-import {getRequestBody, parseQueryParams, removeSlash} from './utils';
+import {getRequestBody, parseQueryParams} from './utils';
 import {MuzuException} from './exceptions/muzu.exception';
 import {NotFoundException} from './exceptions/not-found.exception';
 import {BadRequestException} from './exceptions/bad-request.exception';
+import RouteManager from './route-manager';
 
 export {Request, Response, RouteHandler, HttpException};
 
 export class MuzuServer {
-  private readonly routes: Route[];
   public readonly server: Server;
+  public readonly routeManager: RouteManager;
 
   constructor() {
-    this.routes = [];
+    this.routeManager = new RouteManager();
     this.server = createServer(this.handleRequest.bind(this));
   }
 
-  public addRoute = (route: Route): void => {
-    this.routes.push(route);
-  };
-
-  public addRoutes = (routes: Route[]): void => {
-    this.routes.push(...routes);
-  };
   public listen(port: number, callback?: () => void): void {
     console.log('🚀 Server is listening on port', port);
-    console.log('📡 Routes', this.routes);
+    console.log('📡 Routes', this.routeManager.getRoutes());
     this.server.listen(port, callback);
   }
 
@@ -39,7 +33,15 @@ export class MuzuServer {
     this.server.close(callback);
   }
 
-  private sendResponse(res: Response, statusCode: number, body: Object): void {
+  private async sendResponse(
+    res: Response,
+    statusCode: number,
+    body: Object
+  ): Promise<void> {
+    if (body instanceof Promise) {
+      body = await body;
+    }
+
     res.writeHead(statusCode, {'Content-Type': 'application/json'});
     res.end(JSON.stringify(body));
     console.log('📤 Response', {statusCode, body});
@@ -52,10 +54,7 @@ export class MuzuServer {
 
       req.params = parseQueryParams(url!);
 
-      const route = this.routes.find(
-        req =>
-          removeSlash(req.url) === removeSlash(path) && req.method === method
-      );
+      const route = await this.routeManager.find(path, method);
 
       if (!route) {
         throw new NotFoundException(`Route ${method} ${path} not found`, {
@@ -129,29 +128,29 @@ export class MuzuServer {
         } as Route;
       });
 
-      this.addRoutes(routers.filter(Boolean) as Route[]);
+      this.routeManager.addRoutes(routers.filter(Boolean) as Route[]);
 
       return target;
     };
   };
 
-  Get = (url: string) => {
+  Get = (url = '/') => {
     return this.HttpMethod(RequestMethod.GET, url);
   };
 
-  Post = (url: string) => {
+  Post = (url = '/') => {
     return this.HttpMethod(RequestMethod.POST, url);
   };
 
-  Delete = (url: string) => {
+  Delete = (url = '/') => {
     return this.HttpMethod(RequestMethod.DELETE, url);
   };
 
-  Put = (url: string) => {
+  Put = (url = '/') => {
     return this.HttpMethod(RequestMethod.PUT, url);
   };
 
-  Patch = (url: string) => {
+  Patch = (url = '/') => {
     return this.HttpMethod(RequestMethod.PATCH, url);
   };
 }
