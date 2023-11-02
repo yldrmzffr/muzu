@@ -38,10 +38,6 @@ export class MuzuServer {
     statusCode: number,
     body: Object
   ): Promise<void> {
-    if (body instanceof Promise) {
-      body = await body;
-    }
-
     res.writeHead(statusCode, {'Content-Type': 'application/json'});
     res.end(JSON.stringify(body));
     console.log('📤 Response', {statusCode, body});
@@ -72,7 +68,12 @@ export class MuzuServer {
         throw new BadRequestException('Error parsing body', err.details);
       }
 
-      const result = route.handler(req, res);
+      let result: Object = route.handler(req, res);
+
+      if (result instanceof Promise) {
+        result = await result;
+      }
+
       const statusCode = res.statusCode || 200;
       return this.sendResponse(res, statusCode, result);
     } catch (error) {

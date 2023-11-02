@@ -1,4 +1,4 @@
-import {MuzuServer, Request} from '../lib';
+import {MuzuServer, Request, HttpException} from '../lib';
 import * as request from 'supertest';
 
 const muzuServer = new MuzuServer();
@@ -29,6 +29,26 @@ class TestController {
   @Patch('/hello')
   helloPatch() {
     return {message: 'Patch Method Called'};
+  }
+
+  asyncReturn() {
+    return new Promise(resolve => {
+      setTimeout(() => {
+        resolve({message: 'Async Method Called'});
+      }, 300);
+    });
+  }
+
+  @Post('/async-hello')
+  async asyncHello() {
+    const result = await this.asyncReturn();
+    console.log('result', result);
+    return result;
+  }
+
+  @Post('/async-error')
+  async asyncError() {
+    throw new HttpException(400, 'Async Error');
   }
 }
 
@@ -90,6 +110,26 @@ describe('MuzuServer', () => {
     expect(res.body).toEqual({
       kind: 'MuzuException',
       message: 'Error parsing body',
+      status: 400,
+    });
+  });
+
+  it('should return 200 on POST /api/async-hello', async () => {
+    const res = await request(muzuServer.server)
+      .post('/api/async-hello')
+      .send({name: 'Muzu'});
+    expect(res.status).toEqual(200);
+    expect(res.body).toEqual({message: 'Async Method Called'});
+  });
+
+  it('should return 400 on POST /api/async-error', async () => {
+    const res = await request(muzuServer.server)
+      .post('/api/async-error')
+      .send({name: 'Muzu'});
+    expect(res.status).toEqual(400);
+    expect(res.body).toEqual({
+      kind: 'MuzuException',
+      message: 'Async Error',
       status: 400,
     });
   });
