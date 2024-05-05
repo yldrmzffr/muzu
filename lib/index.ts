@@ -12,6 +12,7 @@ import {
   ControllerFactory,
 } from './controller/controller-factory';
 import {MethodDecorator, MethodFactory} from './methods/method-factory';
+import {MiddlewareDecorator, MiddlewareFactory} from './middleware/middleware';
 
 export {Request, Response, RouteHandler, HttpException};
 
@@ -20,6 +21,7 @@ export class MuzuServer {
   public readonly routeManager: RouteManager;
   public readonly requestHandler: RequestHandler;
   public readonly Controller: ControllerDecorator;
+  public readonly Middleware: MiddlewareDecorator;
   public readonly Get: MethodDecorator;
   public readonly Post: MethodDecorator;
   public readonly Delete: MethodDecorator;
@@ -32,6 +34,9 @@ export class MuzuServer {
 
     this.Controller = new ControllerFactory(this.routeManager).Controller;
     this.requestHandler = new RequestHandler(this.routeManager);
+
+    const middleware = new MiddlewareFactory();
+    this.Middleware = middleware.Middleware;
 
     this.server = createServer(
       this.requestHandler.handleRequest.bind(this.requestHandler)

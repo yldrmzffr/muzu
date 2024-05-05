@@ -49,6 +49,59 @@ Inside the `login` method, you can implement the necessary logic to handle the i
 
 The server is started and set to listen on port 8080 using the `listen` method of the `MuzuServer` instance.
 
+## Middleware
+
+Muzu supports middleware functions that can be applied to routes to execute specific logic before the route handler. Middleware functions can be used for tasks such as logging, authentication, and data validation.
+`@Middleware` decorator can be used to apply middleware functions to specific routes. Let's see an example:
+
+```typescript
+import {MuzuServer, Request, Response} from 'muzu';
+import {HttpException} from "./http.exception";
+
+// Create a new instance of the MuzuServer
+const app = new MuzuServer();
+const {Post, Controller, Middleware} = app;
+
+// Create a Middleware Function
+function LoggerMiddleware(req: Request) {
+  console.log(`Request Received: ${req.url}`);
+}
+
+// Create a Middleware Function
+function AuthMiddleware(req: Request) {
+  const {token} = req.headers;
+
+  if (!token) {
+    throw new HttpException('Unauthorized', 401);
+  }
+  
+  const user = getUserFromToken(token);
+  
+  // You can attact the custom data to the request object
+  req.user = user;
+}
+
+@Controller('auth')
+class TestController {
+
+  @Post('login')
+  @Middleware(AuthMiddleware, LoggerMiddleware) // Apply Middleware to the 'login' route
+  login(req: Request, res: Response) {
+    const {user} = req; // Access the objects attached by the middleware
+
+    // Implement your login logic here
+
+    return {
+      status: true
+    };
+  }
+
+}
+
+// Start the server and listen on port 8080
+app.listen(8080);
+```
+
 ## Exception Handling
 
 Muzu provides a comprehensive exception handling mechanism. You can create custom exception classes by extending the `HttpException` class and utilize them within your application. Let's see an example:

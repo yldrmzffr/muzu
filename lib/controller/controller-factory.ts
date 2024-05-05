@@ -16,7 +16,7 @@ export class ControllerFactory {
         const routeHandler = target.prototype[property];
         const method = Reflect.getMetadata('method', routeHandler);
         const url = Reflect.getMetadata('url', routeHandler);
-
+        const middlewares = Reflect.getMetadata('middlewares', routeHandler);
         if (!method || !url) return;
 
         const fullPath = pathLib.join(path, url);
@@ -25,6 +25,7 @@ export class ControllerFactory {
           method,
           url: fullPath,
           handler: routeHandler.bind(target.prototype),
+          middlewares,
         } as Route;
       });
 

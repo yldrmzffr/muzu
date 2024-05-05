@@ -5,6 +5,7 @@ import {NotFoundException} from '../exceptions/not-found.exception';
 import {getRequestBody, parseQueryParams} from '../utils';
 import {MuzuException} from '../exceptions/muzu.exception';
 import {BadRequestException} from '../exceptions/bad-request.exception';
+
 export class RequestHandler {
   private routeManager: RouteManager;
 
@@ -29,7 +30,7 @@ export class RequestHandler {
 
       req.params = parseQueryParams(url!);
 
-      const route = await this.routeManager.find(path, method);
+      const route = this.routeManager.find(path, method);
 
       if (!route) {
         throw new NotFoundException(`Route ${method} ${path} not found`, {
@@ -39,12 +40,20 @@ export class RequestHandler {
       }
 
       try {
-        const body = await getRequestBody(req);
-        req.body = body;
+        req.body = await getRequestBody(req);
       } catch (error) {
         console.log('🚨 Error parsing body', error);
         const err = error as MuzuException;
         throw new BadRequestException('Error parsing body', err.details);
+      }
+
+      if (route.middlewares) {
+        for (const middleware of route.middlewares) {
+          const result = middleware(req, res);
+          if (result instanceof Promise) {
+            await result;
+          }
+        }
       }
 
       let result: Object = route.handler(req, res);
