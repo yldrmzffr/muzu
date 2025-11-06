@@ -2,9 +2,11 @@ import {Request} from '../interfaces';
 import {Response} from '../types';
 import {RouteManager} from '../routing/route-manager';
 import {NotFoundException} from '../exceptions/not-found.exception';
-import {getRequestBody, parseQueryParams} from '../utils';
+import {getRequestBody} from '../utils';
 import {MuzuException} from '../exceptions/muzu.exception';
 import {BadRequestException} from '../exceptions/bad-request.exception';
+
+const JSON_HEADERS = {'Content-Type': 'application/json'};
 
 export class RequestHandler {
   private routeManager: RouteManager;
@@ -18,54 +20,53 @@ export class RequestHandler {
     statusCode: number,
     body: Object
   ): Promise<void> {
-    res.writeHead(statusCode, {'Content-Type': 'application/json'});
+    res.writeHead(statusCode, JSON_HEADERS);
     res.end(JSON.stringify(body));
-    console.log('📤 Response', {statusCode, body});
   }
 
   public async handleRequest(req: Request, res: Response): Promise<void> {
     try {
       const {url, method} = req;
-      const path = url!.split('?')[0];
 
-      req.params = parseQueryParams(url!);
+      const searchResult = this.routeManager.find(url!, method);
 
-      const route = this.routeManager.find(path, method);
-
-      if (!route) {
+      if (!searchResult.metadata) {
+        const queryIndex = url!.indexOf('?');
+        const path = queryIndex === -1 ? url! : url!.substring(0, queryIndex);
         throw new NotFoundException(`Route ${method} ${path} not found`, {
           method,
           path,
         });
       }
 
-      try {
-        req.body = await getRequestBody(req);
-      } catch (error) {
-        console.log('🚨 Error parsing body', error);
-        const err = error as MuzuException;
-        throw new BadRequestException('Error parsing body', err.details);
-      }
+      const {metadata} = searchResult;
 
-      if (route.middlewares) {
-        for (const middleware of route.middlewares) {
-          const result = middleware(req, res);
-          if (result instanceof Promise) {
-            await result;
-          }
+      const parsed = metadata.pathParser(url!);
+      req.params = {...parsed.queryParams, ...searchResult.params};
+
+      if (metadata.requiresBody) {
+        try {
+          req.body = await getRequestBody(req);
+        } catch (error) {
+          const err = error as MuzuException;
+          throw new BadRequestException('Error parsing body', err.details);
         }
       }
 
-      let result: Object = route.handler(req, res);
+      if (metadata.composedMiddleware) {
+        await metadata.composedMiddleware(req, res);
+      }
 
-      if (result instanceof Promise) {
-        result = await result;
+      let result: Object;
+      if (metadata.isAsync) {
+        result = await metadata.handler(req, res);
+      } else {
+        result = metadata.handler(req, res);
       }
 
       const statusCode = res.statusCode || 200;
       return this.sendResponse(res, statusCode, result);
     } catch (error) {
-      console.log('🚨 Error handling request', error);
       const knownError = error as MuzuException;
 
       if (knownError.kind === 'MuzuException') {

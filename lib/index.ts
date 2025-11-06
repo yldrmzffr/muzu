@@ -51,7 +51,6 @@ export class MuzuServer {
 
   public listen(port: number, callback?: () => void): void {
     console.log('🚀 Server is listening on port', port);
-    console.log('📡 Routes', this.routeManager.getRoutes());
     this.server.listen(port, callback);
   }
 
