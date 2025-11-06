@@ -49,6 +49,100 @@ Inside the `login` method, you can implement the necessary logic to handle the i
 
 The server is started and set to listen on port 8080 using the `listen` method of the `MuzuServer` instance.
 
+## Path Parameters
+
+Muzu supports dynamic path parameters in your routes. You can define path parameters by prefixing a segment with `:` in your route path. Here's an example:
+
+```typescript
+import { MuzuServer, Request, Response } from 'muzu';
+
+const app = new MuzuServer();
+const { Get, Controller } = app;
+
+@Controller('users')
+class UserController {
+
+  @Get(':id')
+  getUser(req: Request, res: Response) {
+    const userId = req.params.id;
+
+    // Fetch user by ID
+    return {
+      userId,
+      name: 'John Doe'
+    };
+  }
+
+  @Get(':userId/posts/:postId')
+  getUserPost(req: Request, res: Response) {
+    const { userId, postId } = req.params;
+
+    // Fetch specific post for a user
+    return {
+      userId,
+      postId,
+      title: 'My Post'
+    };
+  }
+
+}
+
+app.listen(8080);
+```
+
+In this example:
+- `GET /users/123` will match the `getUser` route with `req.params.id = '123'`
+- `GET /users/123/posts/456` will match the `getUserPost` route with `req.params = { userId: '123', postId: '456' }`
+
+## Query Parameters
+
+Muzu automatically parses query parameters from the URL and makes them available through `req.params`. Query parameters are merged with path parameters for convenient access:
+
+```typescript
+import { MuzuServer, Request, Response } from 'muzu';
+
+const app = new MuzuServer();
+const { Get, Controller } = app;
+
+@Controller('products')
+class ProductController {
+
+  @Get()
+  getProducts(req: Request, res: Response) {
+    const { page, limit, sort } = req.params;
+
+    // Use query parameters for pagination and sorting
+    return {
+      page: page || '1',
+      limit: limit || '10',
+      sort: sort || 'desc',
+      products: []
+    };
+  }
+
+  @Get(':id')
+  getProduct(req: Request, res: Response) {
+    const { id, includeReviews, includeImages } = req.params;
+
+    // Path parameter 'id' and query parameters are both available in req.params
+    return {
+      id,
+      includeReviews: includeReviews === 'true',
+      includeImages: includeImages === 'true',
+      product: {}
+    };
+  }
+
+}
+
+app.listen(8080);
+```
+
+Examples:
+- `GET /products?page=2&limit=20&sort=asc` - All query params available in `req.params`
+- `GET /products/123?includeReviews=true&includeImages=false` - Both path param `id` and query params available
+- **Note:** If a path parameter and query parameter have the same name, the path parameter takes precedence
+
 ## Middleware
 
 Muzu supports middleware functions that can be applied to routes to execute specific logic before the route handler. Middleware functions can be used for tasks such as logging, authentication, and data validation.

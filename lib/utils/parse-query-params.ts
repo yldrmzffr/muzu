@@ -1,9 +1,22 @@
 export function parseQueryParams(url: string): Record<string, string> {
   const [, queryString] = url.split('?');
-  const params = queryString?.split('&') || [];
 
-  return params?.reduce((acc, param) => {
+  if (!queryString) {
+    return {};
+  }
+
+  const params = queryString.split('&');
+
+  return params.reduce((acc, param) => {
+    if (!param) return acc;
+
     const [key, value] = param.split('=');
-    return {...acc, [key]: decodeURIComponent(value)};
-  }, {});
+
+    if (!key) return acc;
+
+    return {
+      ...acc,
+      [key]: value ? decodeURIComponent(value) : '',
+    };
+  }, {} as Record<string, string>);
 }

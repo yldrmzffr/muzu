@@ -6,6 +6,7 @@ export interface Route {
   url: string;
   handler: RouteHandler;
   middlewares?: Function[];
+  hasQueryParams?: boolean;
 }
 
 export interface Request extends IncomingMessage {

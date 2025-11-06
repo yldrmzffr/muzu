@@ -15,11 +15,7 @@ export class MethodFactory {
       propertyKey: string,
       descriptor: PropertyDescriptor
     ) => {
-      Reflect.defineMetadata(
-        'url',
-        `${url}`.toLowerCase(),
-        target[propertyKey]
-      );
+      Reflect.defineMetadata('url', url, target[propertyKey]);
       Reflect.defineMetadata('method', method, target[propertyKey]);
       return descriptor;
     };
