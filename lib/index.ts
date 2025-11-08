@@ -13,6 +13,8 @@ import {
 } from './controller/controller-factory';
 import {MethodDecorator, MethodFactory} from './methods/method-factory';
 import {MiddlewareDecorator, MiddlewareFactory} from './middleware/middleware';
+import {getRegisteredControllers} from './controller/controller-registry';
+import {processController} from './controller/controller-processor';
 
 export {Request, Response, RouteHandler, HttpException};
 
@@ -23,16 +25,43 @@ export {
 export * from './validation';
 export {HttpStatus} from './constants/http-status';
 
+// Export global decorators
+export {Controller} from './controller/controller.decorator';
+export {Get, Post, Put, Delete, Patch} from './methods/method-factory';
+export {Middleware} from './middleware/middleware';
+export {clearRegistry} from './controller/controller-registry';
+
 export class MuzuServer {
   public readonly server: Server;
   public readonly routeManager: RouteManager;
   public readonly requestHandler: RequestHandler;
+  /**
+   * @deprecated Use global Controller decorator instead: `import { Controller } from 'muzu'`
+   */
   public readonly Controller: ControllerDecorator;
+  /**
+   * @deprecated Use global Middleware decorator instead: `import { Middleware } from 'muzu'`
+   */
   public readonly Middleware: MiddlewareDecorator;
+  /**
+   * @deprecated Use global Get decorator instead: `import { Get } from 'muzu'`
+   */
   public readonly Get: MethodDecorator;
+  /**
+   * @deprecated Use global Post decorator instead: `import { Post } from 'muzu'`
+   */
   public readonly Post: MethodDecorator;
+  /**
+   * @deprecated Use global Delete decorator instead: `import { Delete } from 'muzu'`
+   */
   public readonly Delete: MethodDecorator;
+  /**
+   * @deprecated Use global Put decorator instead: `import { Put } from 'muzu'`
+   */
   public readonly Put: MethodDecorator;
+  /**
+   * @deprecated Use global Patch decorator instead: `import { Patch } from 'muzu'`
+   */
   public readonly Patch: MethodDecorator;
 
   constructor() {
@@ -56,7 +85,16 @@ export class MuzuServer {
     this.Patch = methods.Patch;
   }
 
+  private loadControllers(): void {
+    const controllers = getRegisteredControllers();
+    controllers.forEach(({target, path}) => {
+      processController(target, path, this.routeManager);
+    });
+  }
+
   public listen(port: number, callback?: () => void): void {
+    this.loadControllers();
+
     console.log('🚀 Server is listening on port', port);
     this.server.listen(port, callback);
   }

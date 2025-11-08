@@ -1,8 +1,12 @@
-import {MuzuServer, Request} from '../lib';
+import {
+  MuzuServer,
+  Request,
+  Post,
+  Get,
+  Controller,
+  clearRegistry,
+} from '../lib';
 import * as request from 'supertest';
-
-const muzuServer = new MuzuServer();
-const {Post, Get, Controller} = muzuServer;
 
 @Controller('users')
 class UserController {
@@ -50,10 +54,14 @@ class PostController {
   }
 }
 
-const port = 3002;
+const muzuServer = new MuzuServer();
+const port = 3004;
 muzuServer.listen(port);
 
 describe('RouteTree Routing with Path Parameters', () => {
+  afterAll(() => {
+    clearRegistry();
+  });
   it('should match static route', async () => {
     const res = await request(muzuServer.server).get('/users');
     expect(res.status).toEqual(200);

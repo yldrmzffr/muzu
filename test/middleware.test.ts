@@ -1,8 +1,13 @@
-import {MuzuServer, Request, HttpException} from '../lib';
+import {
+  MuzuServer,
+  Request,
+  HttpException,
+  Controller,
+  Get,
+  Middleware,
+  clearRegistry,
+} from '../lib';
 import * as request from 'supertest';
-
-const muzuServer = new MuzuServer();
-const {Controller, Get, Middleware} = muzuServer;
 
 function Logger() {
   console.log('Logger Middleware');
@@ -64,10 +69,14 @@ class TestController {
   }
 }
 
+const muzuServer = new MuzuServer();
 const port = 3001;
 muzuServer.listen(port);
 
 describe('MuzuServer', () => {
+  afterAll(() => {
+    clearRegistry();
+  });
   it('should return 200 on GET /api/hello', async () => {
     const res = await request(muzuServer.server).get('/api/hello');
     expect(res.status).toBe(200);

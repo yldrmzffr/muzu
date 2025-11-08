@@ -5,15 +5,42 @@ export type Middleware = (
 ) => PropertyDescriptor;
 
 export type MiddlewareDecorator = (...middlewares: Function[]) => Middleware;
-export class MiddlewareFactory {
-  Middleware = (...middlewares: Function[]): Middleware => {
-    return (
-      target: any,
-      propertyKey: string,
-      descriptor: PropertyDescriptor
-    ) => {
-      Reflect.defineMetadata('middlewares', middlewares, target[propertyKey]);
-      return descriptor;
-    };
+
+/**
+ * Global Middleware decorator
+ * Attaches middleware functions to a route handler
+ *
+ * @param middlewares - One or more middleware functions
+ *
+ * @example
+ * ```typescript
+ * import { Controller, Get, Middleware } from 'muzu';
+ *
+ * function authMiddleware(req, res) {
+ *   // Check authentication
+ * }
+ *
+ * @Controller('/api')
+ * export class UserController {
+ *   @Get('/users')
+ *   @Middleware(authMiddleware)
+ *   getUsers() {
+ *     return { users: [] };
+ *   }
+ * }
+ * ```
+ */
+export const Middleware: MiddlewareDecorator = (...middlewares: Function[]) => {
+  return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+    Reflect.defineMetadata('middlewares', middlewares, target[propertyKey]);
+    return descriptor;
   };
+};
+
+/**
+ * @deprecated Use global Middleware decorator instead of factory class
+ * Kept for backward compatibility
+ */
+export class MiddlewareFactory {
+  Middleware = Middleware;
 }
