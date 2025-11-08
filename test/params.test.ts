@@ -1,8 +1,12 @@
-import {MuzuServer, Request} from '../lib';
+import {
+  MuzuServer,
+  Request,
+  Controller,
+  Get,
+  Post,
+  clearRegistry,
+} from '../lib';
 import * as request from 'supertest';
-
-const muzuServer = new MuzuServer();
-const {Get, Post, Controller} = muzuServer;
 
 @Controller('api')
 class ParamsController {
@@ -43,8 +47,13 @@ class ParamsController {
   }
 }
 
+const muzuServer = new MuzuServer();
 const port = 3003;
 muzuServer.listen(port);
+
+afterAll(() => {
+  clearRegistry();
+});
 
 describe('Path Parameters', () => {
   it('should extract single path parameter', async () => {

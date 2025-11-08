@@ -13,6 +13,10 @@ import {
   ValidateQuery,
   IsInt,
   IsOptional,
+  Controller,
+  Post,
+  Get,
+  clearRegistry,
 } from '../lib';
 import * as request from 'supertest';
 
@@ -55,9 +59,6 @@ class PostDto {
   tags: TagDto[] = [];
 }
 
-const muzuServer = new MuzuServer();
-const {Controller, Post, Get} = muzuServer;
-
 @Controller('/validation')
 class ValidationController {
   @Post('/user')
@@ -84,7 +85,15 @@ class ValidationController {
   }
 }
 
+const muzuServer = new MuzuServer();
+const port = 3002;
+muzuServer.listen(port);
+
 describe('Validation System', () => {
+  afterAll(() => {
+    clearRegistry();
+    muzuServer.stop();
+  });
   describe('Body Validation', () => {
     it('should accept valid user data', async () => {
       const validUser = {

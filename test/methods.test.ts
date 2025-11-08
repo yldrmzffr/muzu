@@ -1,8 +1,17 @@
-import {MuzuServer, Request, HttpException} from '../lib';
+import {
+  MuzuServer,
+  Request,
+  HttpException,
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Put,
+  Patch,
+  clearRegistry,
+} from '../lib';
 import * as request from 'supertest';
 
-const muzuServer = new MuzuServer();
-const {Controller, Get, Post, Delete, Put, Patch} = muzuServer;
 @Controller('/api')
 class TestController {
   @Get('/hello')
@@ -52,10 +61,14 @@ class TestController {
   }
 }
 
+const muzuServer = new MuzuServer();
 const port = 3000;
 muzuServer.listen(port);
 
 describe('MuzuServer', () => {
+  afterAll(() => {
+    clearRegistry();
+  });
   it('should return 200 on GET /api/hello', async () => {
     const res = await request(muzuServer.server).get('/api/hello');
     expect(res.status).toEqual(200);
