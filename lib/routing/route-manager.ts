@@ -24,7 +24,9 @@ export class RouteManager {
       route.handler,
       route.middlewares,
       route.method,
-      route.hasQueryParams
+      route.hasQueryParams,
+      route.bodyValidator,
+      route.queryValidator
     );
   }
 

@@ -4,13 +4,16 @@
     "target": "ES2022",
     "module": "commonjs",
     "strict": true,
-    "rootDirs": ["./lib", "./test"],
+    "rootDirs": ["./lib"],
     "outDir": "./build/",
     "skipLibCheck": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },
+  "include": ["lib/**/*"],
   "exclude": [
-    "build"
+    "build",
+    "test",
+    "node_modules"
   ]
 }
