@@ -1,6 +1,6 @@
 {
   "name": "muzu",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "",
   "main": "build/lib/index.js",
   "types": "build/lib/index.d.ts",
@@ -50,7 +50,6 @@
     "typescript": "~4.7.0"
   },
   "dependencies": {
-    "http-status": "^1.6.2",
     "reflect-metadata": "^0.1.13"
   }
 }

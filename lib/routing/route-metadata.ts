@@ -1,5 +1,6 @@
 import {RouteHandler} from '../types';
 import {PathParser} from './path-parser';
+import {CompiledValidator} from '../validation';
 
 export interface RouteMetadata {
   handler: RouteHandler;
@@ -13,6 +14,9 @@ export interface RouteMetadata {
   pathParser: PathParser;
 
   method: string;
+
+  bodyValidator?: CompiledValidator;
+  queryValidator?: CompiledValidator;
 }
 
 export type ComposedMiddleware = (req: any, res: any) => Promise<void> | void;

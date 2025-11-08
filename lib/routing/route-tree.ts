@@ -7,6 +7,7 @@ import {
   isAsyncFunction,
   requiresBodyParsing,
 } from './route-metadata';
+import {CompiledValidator} from '../validation';
 
 const PARAM_PREFIX = ':';
 const PATH_SEPARATOR = '/';
@@ -28,7 +29,9 @@ export class RouteTree {
     handler: RouteHandler,
     middlewares?: Function[],
     method?: string,
-    hasQueryParams?: boolean
+    hasQueryParams?: boolean,
+    bodyValidator?: CompiledValidator,
+    queryValidator?: CompiledValidator
   ): void {
     const segments = this.splitPathIntoSegments(path);
     const leafNode = this.traverseAndCreateNodes(segments);
@@ -37,7 +40,9 @@ export class RouteTree {
       handler,
       middlewares,
       method,
-      hasQueryParams
+      hasQueryParams,
+      bodyValidator,
+      queryValidator
     );
   }
 
@@ -45,7 +50,9 @@ export class RouteTree {
     handler: RouteHandler,
     middlewares?: Function[],
     method?: string,
-    hasQueryParams?: boolean
+    hasQueryParams?: boolean,
+    bodyValidator?: CompiledValidator,
+    queryValidator?: CompiledValidator
   ): RouteMetadata {
     let queryParamsDetected = hasQueryParams;
     if (queryParamsDetected === undefined) {
@@ -63,6 +70,8 @@ export class RouteTree {
       hasQueryParams: queryParamsDetected,
       pathParser: compilePathParser(queryParamsDetected),
       method: method || 'GET',
+      bodyValidator,
+      queryValidator,
     };
   }
 

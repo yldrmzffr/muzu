@@ -16,6 +16,13 @@ import {MiddlewareDecorator, MiddlewareFactory} from './middleware/middleware';
 
 export {Request, Response, RouteHandler, HttpException};
 
+export {
+  ValidationException,
+  ValidationError,
+} from './exceptions/validation.exception';
+export * from './validation';
+export {HttpStatus} from './constants/http-status';
+
 export class MuzuServer {
   public readonly server: Server;
   public readonly routeManager: RouteManager;

@@ -1,3 +1,4 @@
+import {HttpStatus} from '../constants/http-status';
 import {Request} from '../interfaces';
 import {Response} from '../types';
 import {RouteManager} from '../routing/route-manager';
@@ -5,6 +6,7 @@ import {NotFoundException} from '../exceptions/not-found.exception';
 import {getRequestBody} from '../utils';
 import {MuzuException} from '../exceptions/muzu.exception';
 import {BadRequestException} from '../exceptions/bad-request.exception';
+import {ValidationException} from '../exceptions/validation.exception';
 
 const JSON_HEADERS = {'Content-Type': 'application/json'};
 
@@ -44,6 +46,13 @@ export class RequestHandler {
       const parsed = metadata.pathParser(url!);
       req.params = {...parsed.queryParams, ...searchResult.params};
 
+      if (metadata.queryValidator && req.params) {
+        const queryErrors = metadata.queryValidator(req.params);
+        if (queryErrors.length > 0) {
+          throw new ValidationException(queryErrors, 'Query validation failed');
+        }
+      }
+
       if (metadata.requiresBody) {
         try {
           req.body = await getRequestBody(req);
@@ -51,8 +60,14 @@ export class RequestHandler {
           const err = error as MuzuException;
           throw new BadRequestException('Error parsing body', err.details);
         }
-      }
 
+        if (metadata.bodyValidator && req.body) {
+          const bodyErrors = metadata.bodyValidator(req.body);
+          if (bodyErrors.length > 0) {
+            throw new ValidationException(bodyErrors, 'Body validation failed');
+          }
+        }
+      }
       if (metadata.composedMiddleware) {
         await metadata.composedMiddleware(req, res);
       }
@@ -64,7 +79,7 @@ export class RequestHandler {
         result = metadata.handler(req, res);
       }
 
-      const statusCode = res.statusCode || 200;
+      const statusCode = res.statusCode || HttpStatus.OK;
       return this.sendResponse(res, statusCode, result);
     } catch (error) {
       const knownError = error as MuzuException;
@@ -73,8 +88,8 @@ export class RequestHandler {
         return this.sendResponse(res, knownError.status, knownError);
       }
 
-      return this.sendResponse(res, 500, {
-        message: '500 Internal Server Error',
+      return this.sendResponse(res, HttpStatus.INTERNAL_SERVER_ERROR, {
+        message: 'Internal Server Error',
         stack: knownError.stack,
       });
     }

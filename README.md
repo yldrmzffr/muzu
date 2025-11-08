@@ -1,6 +1,17 @@
-# Muzu: TypeScript HTTP Request Handling and Routing Library
+# Muzu: High-Performance TypeScript HTTP Framework
 
-**Muzu** is a powerful TypeScript npm library designed for server-side HTTP request handling and routing. It provides developers with a seamless and efficient way to handle and route HTTP requests in their Node.js applications.
+**Muzu** is a blazingly fast, zero-dependency TypeScript HTTP framework for Node.js. Built with performance in mind, Muzu uses decorator-based routing, build-time compilation, and aggressive optimizations to deliver exceptional request handling speed.
+
+## Features
+
+- 🚀 **Ultra Fast** - Radix tree routing with O(k) lookup complexity
+- 🎯 **Zero Dependencies** - Only `reflect-metadata` required for decorators
+- 🏗️ **Build-Time Compilation** - Validators and middleware compiled at startup
+- 🎨 **Decorator-Based** - Clean, intuitive API using TypeScript decorators
+- ✅ **Built-in Validation** - Fast, compile-time validated request schemas
+- 🛡️ **Type-Safe** - Full TypeScript support with excellent IDE integration
+- 🔌 **Middleware Support** - Composable middleware with zero runtime overhead
+- 📦 **Lightweight** - Minimal footprint, maximum performance
 
 ## Installation
 
@@ -8,6 +19,21 @@ To incorporate Muzu into your project, you can easily install it via npm using t
 
 ```shell
 npm install muzu
+```
+
+### TypeScript Configuration
+
+Muzu requires TypeScript decorators to be enabled. Add the following to your `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "target": "ES2022",
+    "module": "commonjs"
+  }
+}
 ```
 
 ## Usage
@@ -211,7 +237,7 @@ class UserNotFoundException extends HttpException {
 }
 
 const app = new MuzuServer();
-const { Post, Controller } = app;
+const { Get, Controller } = app;
 
 @Controller('auth')
 class TestController {
@@ -252,6 +278,280 @@ When an exception is thrown and caught, Muzu automatically generates an exceptio
   }
 }
 ```
+
+## Request Validation
+
+Muzu provides a powerful, zero-dependency validation system with build-time compilation for maximum performance. Validators are compiled at application startup, eliminating runtime overhead.
+
+### Basic Validation
+
+Define DTOs using decorators and apply them to your routes:
+
+```typescript
+import {
+  MuzuServer,
+  Request,
+  Response,
+  ValidateBody,
+  ValidateQuery,
+  IsString,
+  IsEmail,
+  IsNumber,
+  Min,
+  Max,
+  MinLength,
+  MaxLength
+} from 'muzu';
+
+// Define a DTO class with validation decorators
+class CreateUserDto {
+  @IsString()
+  @MinLength(3)
+  @MaxLength(20)
+  username: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsNumber()
+  @Min(18)
+  @Max(100)
+  age: number;
+}
+
+const app = new MuzuServer();
+const { Post, Controller } = app;
+
+@Controller('users')
+class UserController {
+
+  @Post()
+  @ValidateBody(CreateUserDto)
+  createUser(req: Request, res: Response) {
+    // If validation passes, req.body is guaranteed to be valid
+    const { username, email, age } = req.body;
+
+    return {
+      id: '123',
+      username,
+      email,
+      age
+    };
+  }
+
+}
+
+app.listen(8080);
+```
+
+### Query Parameter Validation
+
+```typescript
+class SearchQueryDto {
+  @IsString()
+  @MinLength(1)
+  query: string;
+
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  limit?: number;
+
+  @IsString()
+  sort?: string;
+}
+
+@Controller('search')
+class SearchController {
+
+  @Get()
+  @ValidateQuery(SearchQueryDto)
+  search(req: Request, res: Response) {
+    const { query, limit, sort } = req.params;
+
+    return {
+      results: [],
+      query,
+      limit: limit || 10
+    };
+  }
+
+}
+```
+
+### Available Validators
+
+**Type Validators:**
+- `@IsString()` - Validates string type
+- `@IsNumber()` - Validates number type (excludes NaN)
+- `@IsBoolean()` - Validates boolean type
+- `@IsDate()` - Validates Date instance
+- `@IsInt()` - Validates integer numbers
+
+**String Validators:**
+- `@MinLength(length)` - Minimum string length
+- `@MaxLength(length)` - Maximum string length
+- `@IsEmail()` - Validates email format
+- `@IsUrl()` - Validates URL format
+- `@IsUUID()` - Validates UUID format
+- `@Matches(pattern)` - Validates against custom regex
+
+**Number Validators:**
+- `@Min(value)` - Minimum number value
+- `@Max(value)` - Maximum number value
+- `@IsPositive()` - Must be positive (> 0)
+- `@IsNegative()` - Must be negative (< 0)
+
+**Array Validators:**
+- `@IsArray()` - Validates array type
+- `@ArrayMinSize(size)` - Minimum array length
+- `@ArrayMaxSize(size)` - Maximum array length
+- `@ArrayItem(DtoClass)` - Validates array items against DTO
+
+**Other Validators:**
+- `@IsOptional()` - Field is optional
+- `@IsRequired()` - Field is required
+- `@IsEnum(enumObject)` - Validates against enum values
+
+### Array Validation Example
+
+```typescript
+class TagDto {
+  @IsString()
+  @MinLength(1)
+  name: string;
+}
+
+class CreatePostDto {
+  @IsString()
+  @MinLength(5)
+  title: string;
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(10)
+  @ArrayItem(() => TagDto)
+  tags: TagDto[];
+}
+
+@Controller('posts')
+class PostController {
+
+  @Post()
+  @ValidateBody(CreatePostDto)
+  createPost(req: Request, res: Response) {
+    const { title, tags } = req.body;
+
+    return {
+      id: '123',
+      title,
+      tags
+    };
+  }
+
+}
+```
+
+### Validation Error Response
+
+When validation fails, Muzu returns a detailed error response:
+
+```json
+{
+  "status": 400,
+  "message": "Body validation failed",
+  "kind": "MuzuException",
+  "errors": [
+    {
+      "field": "username",
+      "constraint": "minLength",
+      "value": "ab",
+      "message": "username must be at least 3 characters"
+    },
+    {
+      "field": "email",
+      "constraint": "isEmail",
+      "value": "not-an-email",
+      "message": "email must be a valid email"
+    },
+    {
+      "field": "age",
+      "constraint": "min",
+      "value": 15,
+      "message": "age must be at least 18"
+    }
+  ]
+}
+```
+
+### Performance
+
+Muzu's validation system is designed for maximum performance:
+- **Build-time compilation** - Validators are compiled to optimized functions at startup
+- **Zero runtime dependencies** - Pure inline validation checks
+- **No function call overhead** - Direct type checks and inline regex
+- **Single-pass validation** - All constraints checked in one iteration
+
+## HTTP Status Codes
+
+Muzu provides built-in HTTP status code constants:
+
+```typescript
+import { HttpStatus } from 'muzu';
+
+@Controller('users')
+class UserController {
+
+  @Post()
+  createUser(req: Request, res: Response) {
+    res.statusCode = HttpStatus.CREATED; // 201
+
+    return {
+      id: '123',
+      username: 'john_doe'
+    };
+  }
+
+  @Delete(':id')
+  deleteUser(req: Request, res: Response) {
+    res.statusCode = HttpStatus.NO_CONTENT; // 204
+    return {};
+  }
+
+}
+```
+
+Available constants include: `OK`, `CREATED`, `NO_CONTENT`, `BAD_REQUEST`, `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `INTERNAL_SERVER_ERROR`, and more.
+
+## Performance
+
+Muzu is designed from the ground up for maximum performance. Here are some of the optimizations that make Muzu fast:
+
+### Radix Tree Routing
+
+- **O(k) lookup complexity** where k is the number of path segments
+- Static routes take precedence over parameterized routes
+- Efficient memory usage with shared prefixes
+
+### Build-Time Compilation
+
+**Validators:**
+- All validation rules compiled to optimized functions at startup
+- Zero runtime overhead for validation logic
+- Inline type checks and regex patterns
+- No function call overhead
+
+**Middleware:**
+- Multiple middleware functions composed into a single function
+- Eliminates array iteration at runtime
+- Pre-determined async/sync handling
+
+### Runtime Optimizations
+
+- **Fast path parsing** - Pre-compiled parsers for each route
+- **Conditional body parsing** - Only parse body for POST/PUT/PATCH
+- **Early async detection** - Handler async status determined at build time
+- **Direct validation checks** - No validator function calls
 
 ## Contributing
 

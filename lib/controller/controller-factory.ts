@@ -1,5 +1,6 @@
 import {RouteManager} from '../routing/route-manager';
 import {Route} from '../interfaces';
+import {getValidationMetadata, compileValidator} from '../validation';
 
 export type ControllerDecorator = (path?: string) => ClassDecorator;
 
@@ -25,12 +26,43 @@ export class ControllerFactory {
           handlerSource.includes('req.params') ||
           handlerSource.includes('req.query');
 
+        const validationMeta = getValidationMetadata(
+          target.prototype,
+          property
+        );
+        let bodyValidator;
+        let queryValidator;
+
+        if (validationMeta.bodyDto) {
+          try {
+            bodyValidator = compileValidator(validationMeta.bodyDto);
+          } catch (error) {
+            console.warn(
+              `⚠️  Failed to compile body validator for ${method.toUpperCase()} ${fullPath}:`,
+              error instanceof Error ? error.message : error
+            );
+          }
+        }
+
+        if (validationMeta.queryDto) {
+          try {
+            queryValidator = compileValidator(validationMeta.queryDto);
+          } catch (error) {
+            console.warn(
+              `⚠️  Failed to compile query validator for ${method.toUpperCase()} ${fullPath}:`,
+              error instanceof Error ? error.message : error
+            );
+          }
+        }
+
         return {
           method,
           url: fullPath,
           handler: routeHandler.bind(target.prototype),
           middlewares,
           hasQueryParams,
+          bodyValidator,
+          queryValidator,
         } as Route;
       });
 

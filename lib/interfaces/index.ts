@@ -1,5 +1,6 @@
 import {IncomingMessage} from 'http';
 import {RouteHandler} from '../types';
+import {CompiledValidator} from '../validation';
 
 export interface Route {
   method: string;
@@ -7,6 +8,8 @@ export interface Route {
   handler: RouteHandler;
   middlewares?: Function[];
   hasQueryParams?: boolean;
+  bodyValidator?: CompiledValidator;
+  queryValidator?: CompiledValidator;
 }
 
 export interface Request extends IncomingMessage {
