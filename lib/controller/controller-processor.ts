@@ -54,6 +54,7 @@ export function processController(
       method,
       url: fullPath,
       handler: routeHandler.bind(target.prototype),
+      originalHandler: routeHandler,
       middlewares,
       hasQueryParams,
       bodyValidator,

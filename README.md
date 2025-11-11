@@ -11,6 +11,7 @@
 - ✅ **Built-in Validation** - Fast, compile-time validated request schemas
 - 🛡️ **Type-Safe** - Full TypeScript support with excellent IDE integration
 - 🔌 **Middleware Support** - Composable middleware with zero runtime overhead
+- 📚 **OpenAPI/Swagger** - Auto-generated API documentation from decorators
 - 📦 **Lightweight** - Minimal footprint, maximum performance
 
 ## Installation
@@ -41,19 +42,17 @@ Muzu requires TypeScript decorators to be enabled. Add the following to your `ts
 Here is an in-depth example demonstrating how to leverage the capabilities of Muzu in your application:
 
 ```typescript
-import { MuzuServer, Request, Response } from 'muzu';
+import { MuzuServer, Controller, Post, Request, Response } from 'muzu';
 
-// Create a new instance of the MuzuServer
-const app = new MuzuServer();
-const { Post, Controller } = app;
-
+// Define your controller using decorators
+// Controllers are automatically registered when decorators execute
 @Controller('auth')
 class TestController {
 
   @Post('login')
   login(req: Request, res: Response) {
     const { username, password } = req.body;
-    
+
     // Implement your login logic here
 
     return {
@@ -63,27 +62,24 @@ class TestController {
 
 }
 
-// Start the server and listen on port 8080
+// Create server instance and start listening
+// Controllers are automatically loaded when listen() is called
+const app = new MuzuServer();
 app.listen(8080);
 ```
 
-In this example, we instantiate a new `MuzuServer` and utilize the `@Post` and `@Controller` decorators to define a route for handling POST requests at the '/login' endpoint within the 'auth' base route.
+In this example, we import the `Controller` and `Post` decorators directly from `muzu` and use them to define routes. The `@Controller` decorator marks a class as a controller and sets the base path for all routes in that class. The `@Post` decorator defines a route for handling POST requests at the '/login' endpoint.
+
+Controllers are automatically registered when their decorators execute, and they're loaded into the server when `listen()` is called.
 
 You can also handle other HTTP methods by using decorators such as `@Get`, `@Put`, `@Delete`, and `@Patch` accordingly.
-
-Inside the `login` method, you can implement the necessary logic to handle the incoming request. In this case, we return a simple object `{ status: true }` as the response.
-
-The server is started and set to listen on port 8080 using the `listen` method of the `MuzuServer` instance.
 
 ## Path Parameters
 
 Muzu supports dynamic path parameters in your routes. You can define path parameters by prefixing a segment with `:` in your route path. Here's an example:
 
 ```typescript
-import { MuzuServer, Request, Response } from 'muzu';
-
-const app = new MuzuServer();
-const { Get, Controller } = app;
+import { MuzuServer, Controller, Get, Request, Response } from 'muzu';
 
 @Controller('users')
 class UserController {
@@ -113,6 +109,7 @@ class UserController {
 
 }
 
+const app = new MuzuServer();
 app.listen(8080);
 ```
 
@@ -125,10 +122,7 @@ In this example:
 Muzu automatically parses query parameters from the URL and makes them available through `req.params`. Query parameters are merged with path parameters for convenient access:
 
 ```typescript
-import { MuzuServer, Request, Response } from 'muzu';
-
-const app = new MuzuServer();
-const { Get, Controller } = app;
+import { MuzuServer, Controller, Get, Request, Response } from 'muzu';
 
 @Controller('products')
 class ProductController {
@@ -161,6 +155,7 @@ class ProductController {
 
 }
 
+const app = new MuzuServer();
 app.listen(8080);
 ```
 
@@ -175,29 +170,23 @@ Muzu supports middleware functions that can be applied to routes to execute spec
 `@Middleware` decorator can be used to apply middleware functions to specific routes. Let's see an example:
 
 ```typescript
-import {MuzuServer, Request, Response} from 'muzu';
-import {HttpException} from "./http.exception";
+import { MuzuServer, Controller, Post, Middleware, Request, Response, HttpException } from 'muzu';
 
-// Create a new instance of the MuzuServer
-const app = new MuzuServer();
-const {Post, Controller, Middleware} = app;
-
-// Create a Middleware Function
+// Create Middleware Functions
 function LoggerMiddleware(req: Request) {
   console.log(`Request Received: ${req.url}`);
 }
 
-// Create a Middleware Function
 function AuthMiddleware(req: Request) {
-  const {token} = req.headers;
+  const { token } = req.headers;
 
   if (!token) {
     throw new HttpException('Unauthorized', 401);
   }
-  
+
   const user = getUserFromToken(token);
-  
-  // You can attact the custom data to the request object
+
+  // You can attach custom data to the request object
   req.user = user;
 }
 
@@ -207,7 +196,7 @@ class TestController {
   @Post('login')
   @Middleware(AuthMiddleware, LoggerMiddleware) // Apply Middleware to the 'login' route
   login(req: Request, res: Response) {
-    const {user} = req; // Access the objects attached by the middleware
+    const { user } = req; // Access the objects attached by the middleware
 
     // Implement your login logic here
 
@@ -218,7 +207,8 @@ class TestController {
 
 }
 
-// Start the server and listen on port 8080
+// Create server instance and start listening
+const app = new MuzuServer();
 app.listen(8080);
 ```
 
@@ -227,7 +217,7 @@ app.listen(8080);
 Muzu provides a comprehensive exception handling mechanism. You can create custom exception classes by extending the `HttpException` class and utilize them within your application. Let's see an example:
 
 ```typescript
-import { MuzuServer, Request, Response, HttpException } from 'muzu';
+import { MuzuServer, Controller, Get, Request, Response, HttpException } from 'muzu';
 
 // Custom Exception Class
 class UserNotFoundException extends HttpException {
@@ -236,21 +226,18 @@ class UserNotFoundException extends HttpException {
   }
 }
 
-const app = new MuzuServer();
-const { Get, Controller } = app;
-
 @Controller('auth')
 class TestController {
 
   @Get('user')
   getUser(req: Request, res: Response) {
     const username = req.body.username;
-    
+
     // Throw a UserNotFoundException
     throw new UserNotFoundException({
       username
     });
-    
+
     // The code below will not be executed because an exception is thrown.
 
     return {
@@ -260,6 +247,7 @@ class TestController {
 
 }
 
+const app = new MuzuServer();
 app.listen(8080);
 ```
 
@@ -290,10 +278,11 @@ Define DTOs using decorators and apply them to your routes:
 ```typescript
 import {
   MuzuServer,
+  Controller,
+  Post,
   Request,
   Response,
   ValidateBody,
-  ValidateQuery,
   IsString,
   IsEmail,
   IsNumber,
@@ -319,9 +308,6 @@ class CreateUserDto {
   age: number;
 }
 
-const app = new MuzuServer();
-const { Post, Controller } = app;
-
 @Controller('users')
 class UserController {
 
@@ -341,12 +327,15 @@ class UserController {
 
 }
 
+const app = new MuzuServer();
 app.listen(8080);
 ```
 
 ### Query Parameter Validation
 
 ```typescript
+import { Controller, Get, ValidateQuery, IsString, IsNumber, Min, Max, MinLength } from 'muzu';
+
 class SearchQueryDto {
   @IsString()
   @MinLength(1)
@@ -416,6 +405,18 @@ class SearchController {
 ### Array Validation Example
 
 ```typescript
+import {
+  Controller,
+  Post,
+  ValidateBody,
+  IsString,
+  IsArray,
+  ArrayMinSize,
+  ArrayMaxSize,
+  ArrayItem,
+  MinLength
+} from 'muzu';
+
 class TagDto {
   @IsString()
   @MinLength(1)
@@ -492,12 +493,292 @@ Muzu's validation system is designed for maximum performance:
 - **No function call overhead** - Direct type checks and inline regex
 - **Single-pass validation** - All constraints checked in one iteration
 
+## Swagger/OpenAPI Documentation
+
+Muzu provides built-in Swagger/OpenAPI 3.0 documentation support with zero external dependencies. Generate interactive API documentation automatically from your decorators.
+
+### Setup
+
+Enable Swagger by passing configuration to MuzuServer:
+
+```typescript
+import { MuzuServer } from 'muzu';
+
+const app = new MuzuServer({
+  swagger: {
+    enabled: true,
+    path: '/swagger',           // Swagger UI path (default: /swagger)
+    debug: true,                // Enable debug logs (optional)
+    info: {
+      title: 'My API',
+      version: '1.0.0',
+      description: 'API documentation',
+      contact: {
+        name: 'API Support',
+        email: 'support@example.com'
+      },
+      license: {
+        name: 'MIT',
+        url: 'https://opensource.org/licenses/MIT'
+      }
+    },
+    servers: [                  // Optional server definitions
+      {
+        url: 'http://localhost:3000', 
+        description: 'Development server'
+      }
+    ]
+  }
+});
+
+app.listen(3000);
+```
+
+### Documenting APIs with Decorators
+
+Use Swagger decorators to document your API endpoints:
+
+```typescript
+import {
+  Controller,
+  Get,
+  Post,
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParameter,
+  ApiBody,
+  ValidateBody,
+  IsString,
+  IsEmail,
+  IsNumber,
+  Min,
+  Max
+} from 'muzu';
+
+// Define DTOs for request/response
+class CreateUserDto {
+  @IsString()
+  @MinLength(3)
+  username: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsNumber()
+  @Min(18)
+  @Max(100)
+  age: number;
+}
+
+class UserResponseDto {
+  @IsString()
+  id: string;
+
+  @IsString()
+  username: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsNumber()
+  age: number;
+}
+```
+
+#### Available Swagger Decorators
+
+**@ApiTags** - Tag controller or method (supports description):
+```typescript
+// Simple string tags
+@ApiTags('Users', 'Authentication')
+
+// Tags with descriptions
+@ApiTags(
+  { name: 'Users', description: 'User management endpoints' },
+  { name: 'Auth', description: 'Authentication endpoints' }
+)
+```
+
+**@ApiOperation** - Document operation details:
+```typescript
+@ApiOperation({
+  summary: 'Create a new user',
+  description: 'Creates a new user with the provided information',
+  operationId: 'createUser'  // Optional unique identifier
+})
+```
+
+**@ApiResponse** - Document response types:
+```typescript
+@ApiResponse({
+  status: 200,
+  description: 'Successful response',
+  type: UserResponseDto,     // DTO class
+  isArray: false             // Set to true for array responses
+})
+
+@ApiResponse({
+  status: 400,
+  description: 'Invalid input'
+})
+```
+
+**@ApiParameter** - Document path/query/header parameters:
+```typescript
+@ApiParameter({
+  name: 'id',
+  in: 'path',               // 'path' | 'query' | 'header'
+  description: 'User ID',
+  required: true,
+  type: 'string',           // 'string' | 'number' | 'boolean' | 'integer'
+  example: '123'
+})
+```
+
+**@ApiBody** - Document request body:
+```typescript
+@ApiBody({
+  description: 'User data',
+  required: true,
+  type: CreateUserDto       // DTO class
+})
+```
+
+### Complete Example
+
+Here's a fully documented controller:
+
+```typescript
+@Controller('/api/users')
+@ApiTags({ name: 'Users', description: 'User management endpoints' })
+export class UserController {
+
+  @Get()
+  @ApiOperation({
+    summary: 'Get all users',
+    description: 'Returns a list of all users in the system'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successful response',
+    type: UserResponseDto,
+    isArray: true
+  })
+  getUsers(req: Request, res: Response) {
+    return {
+      users: [
+        { id: '1', username: 'alice', email: 'alice@example.com', age: 25 },
+        { id: '2', username: 'bob', email: 'bob@example.com', age: 30 }
+      ]
+    };
+  }
+
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get user by ID',
+    description: 'Returns a single user by their ID'
+  })
+  @ApiParameter({
+    name: 'id',
+    in: 'path',
+    description: 'User ID',
+    required: true,
+    type: 'string'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successful response',
+    type: UserResponseDto
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found'
+  })
+  getUser(req: Request, res: Response) {
+    const { id } = req.params;
+    return {
+      id,
+      username: 'alice',
+      email: 'alice@example.com',
+      age: 25
+    };
+  }
+
+  @Post()
+  @ApiOperation({
+    summary: 'Create a new user',
+    description: 'Creates a new user with the provided information'
+  })
+  @ApiBody({
+    description: 'User data',
+    required: true,
+    type: CreateUserDto
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'User created successfully',
+    type: UserResponseDto
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input'
+  })
+  @ValidateBody(CreateUserDto)
+  createUser(req: Request, res: Response) {
+    res.statusCode = 201;
+    return {
+      id: '123',
+      ...req.body
+    };
+  }
+
+}
+```
+
+### Automatic Tag Collection
+
+Tags are **automatically collected** from your `@ApiTags` decorators - no need to define them in the config:
+
+```typescript
+// ✅ Tags are auto-collected from decorators
+@Controller('/api/users')
+@ApiTags({ name: 'Users', description: 'User management' })
+class UserController { }
+
+@Controller('/api/products')
+@ApiTags({ name: 'Products', description: 'Product management' })
+class ProductController { }
+
+// ❌ No need to define tags in config
+const app = new MuzuServer({
+  swagger: {
+    // tags: [...] // Not needed!
+    info: { ... }
+  }
+});
+```
+
+You can use either string format or object format with descriptions:
+- String: `@ApiTags('Users', 'Products')`
+- Object: `@ApiTags({ name: 'Users', description: '...' })`
+- Mixed: `@ApiTags('Auth', { name: 'Users', description: '...' })`
+
+### Accessing Documentation
+
+Once configured, your API documentation is available at:
+
+- **Swagger UI**: `http://localhost:3000/swagger`
+- **OpenAPI JSON**: `http://localhost:3000/swagger.json`
+
+**Debug Mode**: Enable `debug: true` in config to see Swagger generation warnings in console.
+
 ## HTTP Status Codes
 
 Muzu provides built-in HTTP status code constants:
 
 ```typescript
-import { HttpStatus } from 'muzu';
+import { Controller, Post, Delete, HttpStatus, Request, Response } from 'muzu';
 
 @Controller('users')
 class UserController {

@@ -4,6 +4,7 @@ import {CompiledValidator} from '../validation';
 
 export interface RouteMetadata {
   handler: RouteHandler;
+  originalHandler?: RouteHandler;
 
   composedMiddleware?: ComposedMiddleware;
 

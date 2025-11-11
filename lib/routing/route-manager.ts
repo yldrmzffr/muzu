@@ -1,5 +1,6 @@
 import {Route} from '../interfaces';
 import {RouteTree, SearchResult} from './route-tree';
+import {RouteMetadata} from './route-metadata';
 
 export class RouteManager {
   private trees: Map<string, RouteTree>;
@@ -26,7 +27,8 @@ export class RouteManager {
       route.method,
       route.hasQueryParams,
       route.bodyValidator,
-      route.queryValidator
+      route.queryValidator,
+      route.originalHandler
     );
   }
 
@@ -46,6 +48,34 @@ export class RouteManager {
         });
       });
     });
+    return routes;
+  }
+
+  public getRoutesWithMetadata(): Array<{
+    method: string;
+    path: string;
+    handler: Function;
+    metadata?: RouteMetadata;
+  }> {
+    const routes: Array<{
+      method: string;
+      path: string;
+      handler: Function;
+      metadata?: RouteMetadata;
+    }> = [];
+
+    this.trees.forEach((tree, method) => {
+      const treeRoutes = tree.getAllRoutes();
+      treeRoutes.forEach(({path, handler, metadata}) => {
+        routes.push({
+          method,
+          path,
+          handler,
+          metadata,
+        });
+      });
+    });
+
     return routes;
   }
 
