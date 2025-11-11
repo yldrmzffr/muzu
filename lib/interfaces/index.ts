@@ -6,6 +6,7 @@ export interface Route {
   method: string;
   url: string;
   handler: RouteHandler;
+  originalHandler?: RouteHandler;
   middlewares?: Function[];
   hasQueryParams?: boolean;
   bodyValidator?: CompiledValidator;

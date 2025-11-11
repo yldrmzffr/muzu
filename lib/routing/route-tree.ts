@@ -31,7 +31,8 @@ export class RouteTree {
     method?: string,
     hasQueryParams?: boolean,
     bodyValidator?: CompiledValidator,
-    queryValidator?: CompiledValidator
+    queryValidator?: CompiledValidator,
+    originalHandler?: RouteHandler
   ): void {
     const segments = this.splitPathIntoSegments(path);
     const leafNode = this.traverseAndCreateNodes(segments);
@@ -42,7 +43,8 @@ export class RouteTree {
       method,
       hasQueryParams,
       bodyValidator,
-      queryValidator
+      queryValidator,
+      originalHandler
     );
   }
 
@@ -52,7 +54,8 @@ export class RouteTree {
     method?: string,
     hasQueryParams?: boolean,
     bodyValidator?: CompiledValidator,
-    queryValidator?: CompiledValidator
+    queryValidator?: CompiledValidator,
+    originalHandler?: RouteHandler
   ): RouteMetadata {
     let queryParamsDetected = hasQueryParams;
     if (queryParamsDetected === undefined) {
@@ -64,6 +67,7 @@ export class RouteTree {
 
     return {
       handler,
+      originalHandler,
       composedMiddleware: composeMiddlewares(middlewares),
       isAsync: isAsyncFunction(handler),
       requiresBody: method ? requiresBodyParsing(method) : true,
@@ -87,8 +91,16 @@ export class RouteTree {
     return this.createEmptyResult();
   }
 
-  public getAllRoutes(): Array<{path: string; handler: RouteHandler}> {
-    const routes: Array<{path: string; handler: RouteHandler}> = [];
+  public getAllRoutes(): Array<{
+    path: string;
+    handler: RouteHandler;
+    metadata?: RouteMetadata;
+  }> {
+    const routes: Array<{
+      path: string;
+      handler: RouteHandler;
+      metadata?: RouteMetadata;
+    }> = [];
     this.collectRoutes(this.root, '', routes);
     return routes;
   }
@@ -258,7 +270,11 @@ export class RouteTree {
   private collectRoutes(
     node: RouteNode,
     currentPath: string,
-    routes: Array<{path: string; handler: RouteHandler}>
+    routes: Array<{
+      path: string;
+      handler: RouteHandler;
+      metadata?: RouteMetadata;
+    }>
   ): void {
     const path = this.buildPathString(currentPath, node.segment);
 
@@ -266,6 +282,7 @@ export class RouteTree {
       routes.push({
         path: path || PATH_SEPARATOR,
         handler: node.metadata.handler,
+        metadata: node.metadata,
       });
     }
 
