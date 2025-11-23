@@ -7,6 +7,7 @@ export function processController(
   basePath: string,
   routeManager: RouteManager
 ): void {
+  const controllerInstance = new target();
   const properties = Object.getOwnPropertyNames(target.prototype);
 
   const routes: (Route | undefined)[] = properties.map(property => {
@@ -53,7 +54,7 @@ export function processController(
     return {
       method,
       url: fullPath,
-      handler: routeHandler.bind(target.prototype),
+      handler: routeHandler.bind(controllerInstance),
       originalHandler: routeHandler,
       middlewares,
       hasQueryParams,
