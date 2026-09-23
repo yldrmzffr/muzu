@@ -80,7 +80,7 @@ export class RouteTree {
   }
 
   public search(path: string): SearchResult {
-    const segments = this.splitPathIntoSegments(path);
+    const segments = path.split(PATH_SEPARATOR).filter(s => s.length > 0);
     const params: Record<string, string> = {};
     const matchedNode = this.findMatchingNode(this.root, segments, 0, params);
 
@@ -185,7 +185,7 @@ export class RouteTree {
     index: number,
     params: Record<string, string>
   ): RouteNode | null {
-    const staticChild = node.children.get(segment);
+    const staticChild = node.children.get(segment.toLowerCase());
 
     if (!staticChild) {
       return null;

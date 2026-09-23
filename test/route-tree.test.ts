@@ -88,6 +88,14 @@ describe('RouteTree Routing with Path Parameters', () => {
     expect(res.body).toEqual({userId: '789', postId: 'abc'});
   });
 
+  it('should preserve param case and match static segments case-insensitively', async () => {
+    const res = await request(muzuServer.server)
+      .post('/USERS/789/Posts/AbC')
+      .send({});
+    expect(res.status).toEqual(200);
+    expect(res.body).toEqual({userId: '789', postId: 'AbC'});
+  });
+
   it('should match route with multiple path parameters in different controller', async () => {
     const res = await request(muzuServer.server).get(
       '/posts/post123/comments/comment456'
