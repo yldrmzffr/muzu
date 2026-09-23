@@ -61,6 +61,14 @@ class TestController {
   }
 }
 
+@Controller('/errors')
+class ErrorController {
+  @Get('/crash')
+  crash() {
+    throw new Error('secret internals');
+  }
+}
+
 const muzuServer = new MuzuServer();
 const port = 3000;
 muzuServer.listen(port);
@@ -145,6 +153,12 @@ describe('MuzuServer', () => {
       message: 'Async Error',
       status: 400,
     });
+  });
+
+  it('should not leak stack trace on 500', async () => {
+    const res = await request(muzuServer.server).get('/errors/crash');
+    expect(res.status).toEqual(500);
+    expect(res.body).toEqual({message: 'Internal Server Error'});
   });
 });
 

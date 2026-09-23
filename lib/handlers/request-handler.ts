@@ -90,7 +90,6 @@ export class RequestHandler {
 
       return this.sendResponse(res, HttpStatus.INTERNAL_SERVER_ERROR, {
         message: 'Internal Server Error',
-        stack: knownError.stack,
       });
     }
   }
