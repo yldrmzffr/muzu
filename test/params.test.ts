@@ -265,6 +265,14 @@ describe('Query Parameters with POST requests', () => {
     expect(res.body.body).toEqual({data: 'test'});
   });
 
+  it('should decode plus as space and tolerate malformed encoding', async () => {
+    const res = await request(muzuServer.server).get(
+      '/api/query-params?q=hello+world&bad=%E0%A4%A'
+    );
+    expect(res.status).toEqual(200);
+    expect(res.body.params).toEqual({q: 'hello world', bad: '%E0%A4%A'});
+  });
+
   it('should parse query for destructured params', async () => {
     const res = await request(muzuServer.server).get(
       '/api/destructured?name=muzu'

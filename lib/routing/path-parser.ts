@@ -59,9 +59,20 @@ function parseQueryString(queryString: string): Record<string, string> {
     const value = pair.substring(equalsIndex + 1);
 
     if (key) {
-      params[key] = value ? decodeURIComponent(value) : '';
+      params[key] = decodeValue(value);
     }
   }
 
   return params;
+}
+
+function decodeValue(value: string): string {
+  const hasPlus = value.indexOf('+') !== -1;
+  if (!hasPlus && value.indexOf('%') === -1) return value;
+
+  try {
+    return decodeURIComponent(hasPlus ? value.replace(/\+/g, ' ') : value);
+  } catch {
+    return value;
+  }
 }
