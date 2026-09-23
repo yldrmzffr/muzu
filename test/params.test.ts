@@ -4,9 +4,21 @@ import {
   Controller,
   Get,
   Post,
+  Middleware,
+  ValidateQuery,
+  IsString,
   clearRegistry,
 } from '../lib';
 import * as request from 'supertest';
+
+class NameQueryDto {
+  @IsString()
+  name = '';
+}
+
+function copyQuery(req: Request) {
+  req.name = req.params?.name;
+}
 
 @Controller('api')
 class ParamsController {
@@ -44,6 +56,23 @@ class ParamsController {
       body: req.body,
       queryParams: req.params,
     };
+  }
+
+  @Get('destructured')
+  destructured({params}: Request) {
+    return {name: params?.name};
+  }
+
+  @Get('from-middleware')
+  @Middleware(copyQuery)
+  fromMiddleware(req: Request) {
+    return {name: req.name};
+  }
+
+  @Get('validated')
+  @ValidateQuery(NameQueryDto)
+  validated() {
+    return {ok: true};
   }
 }
 
@@ -234,6 +263,28 @@ describe('Query Parameters with POST requests', () => {
 
     expect(res.status).toEqual(200);
     expect(res.body.body).toEqual({data: 'test'});
+  });
+
+  it('should parse query for destructured params', async () => {
+    const res = await request(muzuServer.server).get(
+      '/api/destructured?name=muzu'
+    );
+    expect(res.body).toEqual({name: 'muzu'});
+  });
+
+  it('should parse query when only middleware reads params', async () => {
+    const res = await request(muzuServer.server).get(
+      '/api/from-middleware?name=muzu'
+    );
+    expect(res.body).toEqual({name: 'muzu'});
+  });
+
+  it('should parse query for @ValidateQuery routes', async () => {
+    const res = await request(muzuServer.server).get(
+      '/api/validated?name=muzu'
+    );
+    expect(res.status).toEqual(200);
+    expect(res.body).toEqual({ok: true});
   });
 });
 

@@ -20,11 +20,6 @@ export function processController(
 
     const fullPath = joinPaths(basePath, url);
 
-    const handlerSource = routeHandler.toString();
-    const hasQueryParams =
-      handlerSource.includes('req.params') ||
-      handlerSource.includes('req.query');
-
     const validationMeta = getValidationMetadata(target.prototype, property);
     let bodyValidator;
     let queryValidator;
@@ -51,6 +46,11 @@ export function processController(
       }
     }
 
+    const hasQueryParams =
+      !!validationMeta.queryDto ||
+      usesParams(routeHandler) ||
+      (middlewares || []).some(usesParams);
+
     return {
       method,
       url: fullPath,
@@ -64,6 +64,11 @@ export function processController(
   });
 
   routeManager.addRoutes(routes.filter(Boolean) as Route[]);
+}
+
+function usesParams(fn: Function): boolean {
+  const source = fn.toString();
+  return source.includes('params') || source.includes('query');
 }
 
 function joinPaths(basePath: string, routePath: string): string {
