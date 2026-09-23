@@ -248,6 +248,10 @@ export function compileValidator(dtoClass: unknown): CompiledValidator {
   }
 
   let code = 'return function validate(obj) {\n';
+  code += "  if (obj === null || typeof obj !== 'object') {\n";
+  code +=
+    "    return [{field: '', constraint: 'isObject', value: obj, message: 'value must be an object'}];\n";
+  code += '  }\n';
   code += '  const errors = [];\n';
   code += '  const pushError = (field, constraint, value, message) => {\n';
   code += '    errors.push({field, constraint, value, message});\n';

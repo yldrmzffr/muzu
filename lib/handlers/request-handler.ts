@@ -61,7 +61,7 @@ export class RequestHandler {
           throw new BadRequestException('Error parsing body', err.details);
         }
 
-        if (metadata.bodyValidator && req.body) {
+        if (metadata.bodyValidator) {
           const bodyErrors = metadata.bodyValidator(req.body);
           if (bodyErrors.length > 0) {
             throw new ValidationException(bodyErrors, 'Body validation failed');

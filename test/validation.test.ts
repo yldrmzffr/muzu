@@ -95,6 +95,16 @@ describe('Validation System', () => {
     muzuServer.stop();
   });
   describe('Body Validation', () => {
+    it('should reject null body', async () => {
+      const res = await request(muzuServer.server)
+        .post('/validation/user')
+        .set('Content-Type', 'application/json')
+        .send('null');
+
+      expect(res.status).toBe(400);
+      expect(res.body.errors[0].constraint).toBe('isObject');
+    });
+
     it('should accept valid user data', async () => {
       const validUser = {
         username: 'john_doe',
