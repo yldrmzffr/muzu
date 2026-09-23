@@ -78,7 +78,7 @@ export class MuzuServer {
     this.routeManager = new RouteManager();
     const methods = new MethodFactory();
 
-    this.Controller = new ControllerFactory(this.routeManager).Controller;
+    this.Controller = new ControllerFactory().Controller;
     this.requestHandler = new RequestHandler(this.routeManager);
 
     const middleware = new MiddlewareFactory();
