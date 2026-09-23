@@ -28,10 +28,12 @@ export function processController(
       try {
         bodyValidator = compileValidator(validationMeta.bodyDto);
       } catch (error) {
-        console.warn(
-          `⚠️  Failed to compile body validator for ${method.toUpperCase()} ${fullPath}:`,
-          error instanceof Error ? error.message : error
-        );
+        if (isDev) {
+          console.warn(
+            `⚠️  Failed to compile body validator for ${method.toUpperCase()} ${fullPath}:`,
+            error instanceof Error ? error.message : error
+          );
+        }
       }
     }
 
@@ -39,10 +41,12 @@ export function processController(
       try {
         queryValidator = compileValidator(validationMeta.queryDto);
       } catch (error) {
-        console.warn(
-          `⚠️  Failed to compile query validator for ${method.toUpperCase()} ${fullPath}:`,
-          error instanceof Error ? error.message : error
-        );
+        if (isDev) {
+          console.warn(
+            `⚠️  Failed to compile query validator for ${method.toUpperCase()} ${fullPath}:`,
+            error instanceof Error ? error.message : error
+          );
+        }
       }
     }
 
@@ -65,6 +69,8 @@ export function processController(
 
   routeManager.addRoutes(routes.filter(Boolean) as Route[]);
 }
+
+const isDev = process.env.NODE_ENV !== 'production';
 
 function usesParams(fn: Function): boolean {
   const source = fn.toString();

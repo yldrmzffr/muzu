@@ -192,16 +192,17 @@ export class MuzuServer {
     );
     this.swaggerSpec = generator.generate();
 
-    const swaggerPath = this.swaggerConfig.path || '/swagger';
-    console.log(`📚 Swagger UI available at ${swaggerPath}`);
-    console.log(`📄 Swagger JSON available at ${swaggerPath}.json`);
+    if (this.swaggerConfig.debug) {
+      const swaggerPath = this.swaggerConfig.path || '/swagger';
+      console.warn(`[Muzu Swagger] UI available at ${swaggerPath}`);
+      console.warn(`[Muzu Swagger] JSON available at ${swaggerPath}.json`);
+    }
   }
 
   public listen(port: number, callback?: () => void): void {
     this.loadControllers();
     this.generateSwagger();
 
-    console.log('🚀 Server is listening on port', port);
     this.server.listen(port, callback);
   }
 
